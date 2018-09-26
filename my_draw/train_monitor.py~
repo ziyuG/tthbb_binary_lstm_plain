@@ -1,0 +1,89 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import math
+
+# # summarize history for accuracy
+def mon_training(name, history, m_quantity):
+    """
+    m_quantity, the logged monitorying quantity, could be acc, loss, weighted_acc, weighted_loss
+    """
+    fig,ax = plt.subplots( nrows=1, ncols=1 )
+    ax.plot(history.history[m_quantity])
+    ax.plot(history.history["val_"+m_quantity])
+    ax.set_title('Training epoch choice')
+    ax.set_ylabel(m_quantity)
+    ax.set_xlabel('epoch')
+    ax.legend(['train', 'val'], loc='best')
+    fig.savefig("monitor_"+m_quantity+"_"+name+".eps")
+    plt.close(fig)
+    #plt.show()
+
+def mor_training_loss(name, history):
+    fig,ax = plt.subplots( nrows=1, ncols=1 )
+    ax.plot(history.history['loss'])
+    ax.plot(history.history['val_loss'])
+    ax.set_title('model loss')
+    ax.set_ylabel('loss')
+    ax.set_xlabel('epoch')
+    ax.legend(['train(0.8)', 'val(0.2)'], loc='best')
+    fig.savefig("monitor_loss_"+name+".eps")
+    plt.close(fig)
+    #plt.show()
+
+def mon_avg_auc(name, history):
+    fig,ax = plt.subplots( nrows=1, ncols=1 )
+    ax.plot(history.avg_auc_train)
+    ax.plot(history.avg_auc_test)
+    ax.set_title('model average auc')
+    ax.set_ylabel('avg auc')
+    ax.set_xlabel('epoch')
+    ax.legend(['train', 'test'], loc='best')
+    fig.savefig("monitor_avg_auc_"+name+".eps")
+    plt.close(fig)
+    #plt.show()
+
+def mon_auc(name, history):
+    fig,ax = plt.subplots( nrows=1, ncols=1 )
+    ax.plot(history.auc_train)
+    ax.plot(history.auc_test)
+    ax.set_title('model auc')
+    ax.set_ylabel('auc')
+    ax.set_xlabel('epoch')
+    ax.legend(['train', 'test'], loc='best')
+    fig.savefig("monitor_auc_"+name+".eps")
+    plt.close(fig)
+    #plt.show()
+
+def mon_multi_auc(name, history, class_tag):
+    nb_class = len(class_tag)
+    nr = 2
+    nc = int(math.ceil(nb_class/2.))
+    fig,ax = plt.subplots( nrows=nr, ncols=nc )
+    plt.tight_layout(pad=1.4, w_pad=0.5, h_pad=1.0)
+    train_mat = np.copy(history.auc_train )
+    test_mat = np.copy(history.auc_test )
+    y_max = 1.1*max(train_mat.max(), test_mat.max())
+    y_min = 0.9*min(train_mat.min(), test_mat.min())
+
+    i_count=0
+    m_flag=0
+    for i in range(nr):
+        for j in range(nc):
+            if(i_count == nb_class):
+                break
+
+            ax[i, j].plot(train_mat[i_count], c='blue')
+            ax[i, j].plot(test_mat[i_count], c='orange')
+            ax[i, j].set_title("auc of "+ class_tag[i_count])
+            ax[i, j].label_outer()
+            ax[i, j].set_ylim([y_min, y_max])
+            ax[i, j].grid(True)
+            ax[i, j].set_ylabel('auc')
+            ax[i, j].set_xlabel('epoch')
+            ax[i, j].legend(['train', 'test'], loc='best')
+            i_count = i_count+1
+    
+    fig.savefig("monitor_multi_auc_"+name+".eps")
+    plt.close(fig)
+    #plt.show()
+

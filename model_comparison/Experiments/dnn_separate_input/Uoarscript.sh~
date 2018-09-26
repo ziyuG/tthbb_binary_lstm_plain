@@ -1,0 +1,4 @@
+#!/bin/bash                                                                   
+
+source activate rootKeras
+python $1        #$1 is the filename

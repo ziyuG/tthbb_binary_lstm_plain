@@ -1,0 +1,124 @@
+import sys, os
+import copy
+import time
+#----------------------------
+# fix random seed for reproducibility
+import numpy as np
+import random as rn
+import tensorflow as tf
+np.random.seed(1)
+rn.seed(12345)
+session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
+from keras import backend as K
+tf.set_random_seed(1234)
+sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
+K.set_session(sess)
+#---------------------------                                                    
+from keras.models import load_model
+import matplotlib.pyplot as plt
+from keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau, LearningRateScheduler
+import math as m
+
+#Import my modules
+sys.path.append(os.path.abspath('../../'))
+from my_data import prepare, prepro
+from my_structures import model_nn
+from my_draw import train_monitor, draw_plots
+from my_callback.sd_callback import roc_cb
+
+
+"""
+This is training macro of parse tree, with train on even events for the moment
+"""
+
+"""
+More updates are needed:
+#1. Check the correct way of monitoring training epoch.
+2. Use a better callback function
+"""
+
+
+sig_file = '/home/guo/PycharmProjects/data/ClassificationForTreeDNN_4j_180912.root'
+bkg_file = sig_file
+var_order = ["TTHReco_best_truthMatchPattern",
+             "TTHReco_best_q1hadW_pT",     "TTHReco_best_q1hadW_eta",     "TTHReco_best_q1hadW_phi",     "TTHReco_best_q1hadW_E",
+             "TTHReco_best_q2hadW_pT",     "TTHReco_best_q2hadW_eta",     "TTHReco_best_q2hadW_phi",     "TTHReco_best_q2hadW_E",
+             "TTHReco_best_bhadTop_pT",    "TTHReco_best_bhadTop_eta",    "TTHReco_best_bhadTop_phi",    "TTHReco_best_bhadTop_E",
+             "lepton_pt",                  "lepton_eta",                  "lepton_phi",                  "lepton_E",
+             "TTHReco_best_nulepTop_pT",   "TTHReco_best_nulepTop_eta",   "TTHReco_best_nulepTop_phi",   "TTHReco_best_nulepTop_E",
+             "TTHReco_best_blepTop_pT",    "TTHReco_best_blepTop_eta",    "TTHReco_best_blepTop_phi",    "TTHReco_best_blepTop_E",
+             "TTHReco_best_b1Higgsmv2_pT", "TTHReco_best_b1Higgsmv2_eta", "TTHReco_best_b1Higgsmv2_phi", "TTHReco_best_b1Higgsmv2_E",
+             "TTHReco_best_b2Higgsmv2_pT", "TTHReco_best_b2Higgsmv2_eta", "TTHReco_best_b2Higgsmv2_phi", "TTHReco_best_b2Higgsmv2_E"]
+
+#Obtained variables: X, Y, eventNumber, sample_weight, weight (5 in total) are default obtained vars. List the additional expected vars here.
+var_obt = ["ClassifBDTOutput_inclusive_withBTag_new"]
+
+cut_d = {'nBTags_85':'>= 4'}
+sig_obt_dict, bkg_obt_dict = prepare.data_prepare(sig_file, bkg_file, var_order, var_obt, **cut_d)
+
+prepare.match_filter('signal')(sig_obt_dict)
+prepare.match_filter('background')(bkg_obt_dict)
+
+
+data_dict = prepare.merge_sig_bkg(sig_obt_dict, bkg_obt_dict, do_debug = False)
+data_dict = prepare.lorentz_trans(data_dict)
+
+##################### train, val, test splitting #####################################
+eventNumber = data_dict['eventNumber']
+        
+X_e, X_o = prepare.even_odd_split(data_dict['X'], eventNumber)
+Y_e, Y_o = prepare.even_odd_split(data_dict['Y'], eventNumber)
+ClassifBDTOutput_inclusive_withBTag_new_e, ClassifBDTOutput_inclusive_withBTag_new_o = prepare.even_odd_split(data_dict['ClassifBDTOutput_inclusive_withBTag_new'], eventNumber)
+weight_e, weight_o = prepare.even_odd_split(data_dict['weight'], eventNumber)
+sample_weight_e, sample_weight_o = prepare.even_odd_split( data_dict['sample_weight'], eventNumber )
+sample_weight_e = prepare.balance_class(sample_weight_e, Y_e)
+sample_weight_o = prepare.balance_class(sample_weight_o, Y_o)
+
+
+###################################
+##### train_even and test_odd #####
+val_split=0.2
+X_e_learn, X_e_val, X_o_app, l_mean, l_std = prepro.scale_norm(X_e, X_o, val_split)
+Y_e_learn, Y_e_val = prepro.learn_val_split(Y_e, val_split)
+sample_weight_e_learn, sample_weight_e_val = prepro.learn_val_split(sample_weight_e, val_split)
+weight_e_learn, weight_e_val = prepro.learn_val_split(weight_e, val_split)
+# print X_e_learn
+# print Y_e_learn
+# print sample_weight_e_learn
+# print weight_e_learn
+
+Y_o_app = Y_o
+sample_weight_o_app = sample_weight_o
+weight_o_app = weight_o
+
+
+print("# of events for train: %d, val: %d, test: %d" % (len(Y_e_learn), len(Y_e_val), len(Y_o_app) ) )
+
+# callbacks_1 = m_callbacks(filepath)
+# callbacks_avg_auc_1 = roc_avg_cb(X_e_learn, X_e_val, Y_e_learn, Y_e_val, weight_e_learn, weight_e_val)
+# callbacks_multi_auc_1 = roc_multi_cb(X_e_learn, X_e_val, Y_e_learn, Y_e_val, weight_e_learn, weight_e_val, Y_e_learn.shape[1])
+# callbacks = [callbacks_avg_auc_1, callbacks_multi_auc_1, callbacks_1]
+
+input_X = [ X_e_learn[:, :4], X_e_learn[:, 4: 8], X_e_learn[:, 8: 12], X_e_learn[:, 12 :16], X_e_learn[:, 16: 20], X_e_learn[:, 20: 24], X_e_learn[:, 24: 28], X_e_learn[:, 28: 32] ]
+input_Y = Y_e_learn
+
+val_X = [X_e_val[:, :4], X_e_val[:, 4: 8], X_e_val[:, 8: 12], X_e_val[:, 12 :16], X_e_val[:, 16: 20], X_e_val[:, 20: 24], X_e_val[:, 24: 28], X_e_val[:, 28: 32]]
+val_Y = Y_e_val
+
+app_X = [X_o_app[:, :4], X_o_app[:, 4: 8], X_o_app[:, 8: 12], X_o_app[:, 12 :16], X_o_app[:, 16: 20], X_o_app[:, 20: 24], X_o_app[:, 24: 28], X_o_app[:, 28: 32] ]
+         
+model_even_odd = load_model("weights-Fold-even-odd-improvement-10-0.859.hdf", custom_objects={'tf': tf, 'm':m} )
+p_test_odd = model_even_odd.predict(app_X, batch_size=200, verbose=0)
+
+draw_plots.drawROCCompare(Y_o_app, p_test_odd, weight_o_app, ClassifBDTOutput_inclusive_withBTag_new_o)
+# callbacks_auc_1 = roc_cb(input_X, val_X, input_Y, val_Y, weight_e_learn, weight_e_val)
+# callbacks= [ModelCheckpoint(filepath, monitor='val_loss', save_best_only=True, verbose=1), callbacks_auc_1]
+
+
+# history_1 = model_1.fit(input_X, input_Y, epochs=100, batch_size=200, sample_weight=sample_weight_e_learn, callbacks=callbacks
+# , validation_data=(val_X, val_Y, sample_weight_e_val))
+
+# train_monitor.mon_training("model_even_odd", history_1, "loss")
+# train_monitor.mon_training("model_even_odd", history_1, "acc")
+# train_monitor.mon_auc("model_even_odd", callbacks_auc_1)
+

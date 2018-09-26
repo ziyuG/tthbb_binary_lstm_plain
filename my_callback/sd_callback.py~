@@ -1,0 +1,69 @@
+import sklearn.metrics
+from keras.callbacks import Callback
+
+class roc_avg_cb(Callback):
+    def __init__(self, X_train, X_test, Y_train, Y_test, weight_train, weight_test, avg_type='macro', verbose=0):
+        super(roc_avg_cb, self).__init__()
+        self.X_train = X_train
+        self.X_test = X_test
+        self.Y_train = Y_train
+        self.Y_test = Y_test
+        self.weight_train = weight_train
+        self.weight_test = weight_test
+        self.avg_type = avg_type
+        self.verbose = verbose
+        
+    def on_train_begin(self, logs={}):
+        self.avg_auc_train = []
+        self.avg_auc_test = []
+
+    def on_epoch_end(self, epoch, logs={}):
+        logs = logs or {}
+        y_pred_train = self.model.predict(self.X_train, verbose=0)
+        score_train =  sklearn.metrics.roc_auc_score(self.Y_train, y_pred_train, average=self.avg_type, sample_weight=self.weight_train)
+        self.avg_auc_train.append(score_train)
+
+        y_pred_test = self.model.predict(self.X_test, verbose=0)
+        score_test =  sklearn.metrics.roc_auc_score(self.Y_test, y_pred_test, average=self.avg_type, sample_weight=self.weight_test)
+        self.avg_auc_test.append(score_test)
+
+    def on_train_end(self, logs=None):
+        pass
+
+
+class roc_multi_cb(Callback):
+    def __init__(self, X_train, X_test, Y_train, Y_test, weight_train, weight_test, nclass, verbose=0):
+        super(roc_multi_cb, self).__init__()
+        self.X_train = X_train
+        self.X_test = X_test
+        self.Y_train = Y_train
+        self.Y_test = Y_test
+        self.weight_train = weight_train
+        self.weight_test = weight_test
+        self.nclass = nclass
+        self.verbose = verbose
+        
+    def on_train_begin(self, logs={}):
+        self.auc_train = []
+        self.auc_test = []
+        for _ in range(self.nclass): 
+            self.auc_train.append([])
+            self.auc_test.append([])
+            
+    def on_epoch_end(self, epoch, logs={}):
+        logs = logs or {}
+        y_pred_train = self.model.predict(self.X_train, verbose=0)
+        y_pred_test = self.model.predict(self.X_test, verbose=0)
+        for iclass in range(self.nclass):
+            score_train =  sklearn.metrics.roc_auc_score(self.Y_train[:, iclass], y_pred_train[:, iclass], sample_weight=self.weight_train)
+            self.auc_train[iclass].append(score_train)
+            score_test =  sklearn.metrics.roc_auc_score(self.Y_test[:, iclass], y_pred_test[:, iclass], sample_weight=self.weight_test)
+            self.auc_test[iclass].append(score_test)
+
+    def on_train_end(self, logs=None):
+        #print self.auc_train
+        #print self.auc_test
+        pass
+
+
+    

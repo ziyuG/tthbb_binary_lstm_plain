@@ -1,0 +1,31 @@
+Using TensorFlow backend.
+2018-09-25 15:14:09.362848: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.1 instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:09.362895: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:09.362904: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:09.362912: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX2 instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:09.362919: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX512F instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:09.362936: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use FMA instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:14.053656: I tensorflow/core/common_runtime/gpu/gpu_device.cc:940] Found device 0 with properties: 
+name: GeForce GTX 1080 Ti
+major: 6 minor: 1 memoryClockRate (GHz) 1.6325
+pciBusID 0000:b1:00.0
+Total memory: 10.92GiB
+Free memory: 10.76GiB
+2018-09-25 15:14:14.054010: I tensorflow/core/common_runtime/gpu/gpu_device.cc:961] DMA: 0 
+2018-09-25 15:14:14.054024: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   Y 
+2018-09-25 15:14:14.054051: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1030] Creating TensorFlow device (/gpu:0) -> (device: 0, name: GeForce GTX 1080 Ti, pci bus id: 0000:b1:00.0)
+2018-09-25 15:14:16.135257: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1030] Creating TensorFlow device (/gpu:0) -> (device: 0, name: GeForce GTX 1080 Ti, pci bus id: 0000:b1:00.0)
+/data1/home/ziyu.guo/lstm_binary_plain/my_structures/model_lstm_aux_feature.py:20: UserWarning: Update your `LSTM` call to the Keras 2 API: `LSTM(100, dropout=0.2, recurrent_dropout=0.2)`
+  lstm_out = LSTM(100, dropout_U=0.2, dropout_W=0.2)(inputs)
+/data1/home/ziyu.guo/lstm_binary_plain/my_structures/model_lstm_aux_feature.py:23: UserWarning: The `merge` function is deprecated and will be removed after 08/2017. Use instead layers from `keras.layers.merge`, e.g. `add`, `concatenate`, etc.
+  x = merge([lstm_out, auxiliary_input], mode='concat')
+/data1/home/ziyu.guo/anaconda2/envs/rootKeras/lib/python2.7/site-packages/keras/legacy/layers.py:458: UserWarning: The `Merge` layer is deprecated and will be removed after 08/2017. Use instead layers from `keras.layers.merge`, e.g. `add`, `concatenate`, etc.
+  name=name)
+/data1/home/ziyu.guo/lstm_binary_plain/my_structures/model_lstm_aux_feature.py:27: UserWarning: Update your `Model` call to the Keras 2 API: `Model(outputs=Tensor("de..., inputs=[<tf.Tenso...)`
+  model = Model(input=[inputs, auxiliary_input], output=predictions)
+2018-09-25 15:14:36.501541: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 2232 get requests, put_count=2138 evicted_count=1000 eviction_rate=0.467727 and unsatisfied allocation rate=0.534946
+2018-09-25 15:14:36.501598: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 100 to 110
+2018-09-25 15:14:36.992046: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 3299 get requests, put_count=3150 evicted_count=1000 eviction_rate=0.31746 and unsatisfied allocation rate=0.355259
+2018-09-25 15:14:36.992104: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 256 to 281
+/data1/home/ziyu.guo/anaconda2/envs/rootKeras/lib/python2.7/site-packages/keras/engine/topology.py:1252: UserWarning: The `Merge` layer is deprecated and will be removed after 08/2017. Use instead layers from `keras.layers.merge`, e.g. `add`, `concatenate`, etc.
+  return cls(**config)

@@ -1,0 +1,151 @@
+import sys, os
+import copy
+import time
+#----------------------------
+# fix random seed for reproducibility
+import numpy as np
+import random as rn
+import tensorflow as tf
+np.random.seed(1)
+rn.seed(12345)
+session_conf = tf.ConfigProto(intra_op_parallelism_threads=1, inter_op_parallelism_threads=1)
+from keras import backend as K
+tf.set_random_seed(1234)
+sess = tf.Session(graph=tf.get_default_graph(), config=session_conf)
+K.set_session(sess)
+#---------------------------                                                    
+
+import matplotlib.pyplot as plt
+from keras.callbacks import EarlyStopping, ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau, LearningRateScheduler
+from keras import optimizers
+from keras.models import load_model
+
+#Import my modules
+sys.path.append(os.path.abspath('../../'))
+from my_data import prepare, prepro
+from my_structures import model_dnn
+from my_draw import train_monitor
+from my_callback.sd_callback import roc_cb_earlyStop
+import math as m
+
+"""
+This is training macro of parse tree, with train on even events for the moment
+"""
+
+"""
+More updates are needed:
+#1. Check the correct way of monitoring training epoch.
+2. Use a better callback function
+"""
+job_option = sys.argv[1]
+
+sig_file = '/data1/home/ziyu.guo/data/ClassificationForTreeDNN_4j_180912.root'
+bkg_file = sig_file
+var_order = ["TTHReco_best_truthMatchPattern",
+             "TTHReco_best_q1hadW_pT",     "TTHReco_best_q1hadW_eta",     "TTHReco_best_q1hadW_phi",     "TTHReco_best_q1hadW_E",
+             "TTHReco_best_q2hadW_pT",     "TTHReco_best_q2hadW_eta",     "TTHReco_best_q2hadW_phi",     "TTHReco_best_q2hadW_E",
+             "TTHReco_best_bhadTop_pT",    "TTHReco_best_bhadTop_eta",    "TTHReco_best_bhadTop_phi",    "TTHReco_best_bhadTop_E",
+             "lepton_pt",                  "lepton_eta",                  "lepton_phi",                  "lepton_E",
+             "TTHReco_best_nulepTop_pT",   "TTHReco_best_nulepTop_eta",   "TTHReco_best_nulepTop_phi",   "TTHReco_best_nulepTop_E",
+             "TTHReco_best_blepTop_pT",    "TTHReco_best_blepTop_eta",    "TTHReco_best_blepTop_phi",    "TTHReco_best_blepTop_E",
+             "TTHReco_best_b1Higgsmv2_pT", "TTHReco_best_b1Higgsmv2_eta", "TTHReco_best_b1Higgsmv2_phi", "TTHReco_best_b1Higgsmv2_E",
+             "TTHReco_best_b2Higgsmv2_pT", "TTHReco_best_b2Higgsmv2_eta", "TTHReco_best_b2Higgsmv2_phi", "TTHReco_best_b2Higgsmv2_E"]
+
+#Obtained variables: X, Y, eventNumber, sample_weight, weight (5 in total) are default obtained vars. List the additional expected vars here.
+var_obt = ["ClassifBDTOutput_inclusive_withBTag_new"]
+
+cut_d = {'nBTags_85':'>= 4'}
+sig_obt_dict, bkg_obt_dict = prepare.data_prepare(sig_file, bkg_file, var_order, var_obt, **cut_d)
+
+prepare.match_filter('signal')(sig_obt_dict)
+prepare.match_filter('background')(bkg_obt_dict)
+    
+data_dict = prepare.merge_sig_bkg(sig_obt_dict, bkg_obt_dict, do_debug = False)
+
+data_dict = prepare.lorentz_trans(data_dict)
+
+
+##################### train, val, test splitting #####################################
+eventNumber = data_dict['eventNumber']
+        
+X_e, X_o = prepare.even_odd_split(data_dict['X'], eventNumber)
+Y_e, Y_o = prepare.even_odd_split(data_dict['Y'], eventNumber)
+weight_e, weight_o = prepare.even_odd_split(data_dict['weight'], eventNumber)
+sample_weight_e, sample_weight_o = prepare.even_odd_split(data_dict['sample_weight'], eventNumber)
+sample_weight_e = prepare.balance_class(sample_weight_e, Y_e)
+sample_weight_o = prepare.balance_class(sample_weight_o, Y_o)
+
+##################################
+##### train_even and test_odd #####
+val_split=0.2
+X_e_learn, X_e_val = prepro.learn_val_split(X_e, val_split)
+Y_e_learn, Y_e_val = prepro.learn_val_split(Y_e, val_split)
+sample_weight_e_learn, sample_weight_e_val = prepro.learn_val_split(sample_weight_e, val_split)
+weight_e_learn, weight_e_val = prepro.learn_val_split(weight_e, val_split)
+prepro.scale_norm(X_e_learn, X_o, X_val=X_e_val)
+
+X_o_app = X_o
+Y_o_app = Y_o
+sample_weight_o_app = sample_weight_o
+weight_o_app = weight_o
+
+print("# of events for train: %d, val: %d, test: %d" % (len(Y_e_learn), len(Y_e_val), len(Y_o_app) ) )
+
+if(job_option=="train" or job_option=="auto"):
+    model_1 = model_dnn.m_model()
+
+    m_adam = optimizers.Adam()#lr=0.482, decay=0.003)
+    model_1.compile(loss='binary_crossentropy', optimizer=m_adam, metrics=['accuracy'])
+    print model_1.summary()
+
+    input_X = X_e_learn
+    input_Y = Y_e_learn
+
+    val_X = X_e_val
+    val_Y = Y_e_val
+
+    callbacks_auc_1 = roc_cb_earlyStop(input_X, val_X, input_Y, val_Y, weight_e_learn, weight_e_val)
+    callbacks= [# ModelCheckpoint(filepath, monitor='val_loss', save_best_only=True, verbose=1),
+                callbacks_auc_1]
+
+
+    history_1 = model_1.fit(input_X, input_Y, epochs=m_epoch, batch_size=200, sample_weight=sample_weight_e_learn, callbacks=callbacks
+                            , validation_data=(val_X, val_Y, sample_weight_e_val) )
+
+    train_monitor.mon_training("model_even_odd", history_1, "loss")
+    train_monitor.mon_training("model_even_odd", history_1, "acc")
+    train_monitor.mon_auc("model_even_odd", callbacks_auc_1)
+
+elif(job_option=="prediction" or job_option=="auto" ):
+    from sklearn.metrics import roc_curve
+    import pickle
+    import glob
+
+    f=glob.glob("Weights-improvement-*-*.hdf")
+    fepoch = [i_f.split('-')[-2] for i_f in f]
+    fauc = [i_f.split('-')[-1] for i_f in f]
+    model_weight = glob.glob("Weights-improvement-{0}-*.hdf".format(max(fepoch)))[0]
+    print("...... LOADED MODEL: %s" % model_weight)
+
+    app_X = X_o_app
+    model_even_odd = load_model(model_weight, custom_objects={'tf': tf, 'm':m} )
+    p_test_odd = model_even_odd.predict(app_X, batch_size=200, verbose=0)
+
+    fpr, tpr, threshold = roc_curve(Y_o_app, p_test_odd, sample_weight=weight_o_app)
+    
+    file_fpr=open('file_fpr','w')
+    pickle.dump(fpr, file_fpr)
+    file_fpr.close()
+
+    file_tpr=open('file_tpr','w')
+    pickle.dump(tpr, file_tpr)
+    file_tpr.close()
+
+    file_threshold=open('file_threshold','w')
+    pickle.dump(threshold, file_threshold)
+    file_threshold.close()
+
+    val_info = [max(fepoch)), max(fauc))]
+    file_val=open('file_val','w')
+    pickle.dump(val_info, file_val)
+    file_val.close()

@@ -1,0 +1,22 @@
+Using TensorFlow backend.
+2018-09-25 15:14:45.316454: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.1 instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:45.316522: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use SSE4.2 instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:45.316539: W tensorflow/core/platform/cpu_feature_guard.cc:45] The TensorFlow library wasn't compiled to use AVX instructions, but these are available on your machine and could speed up CPU computations.
+2018-09-25 15:14:45.495477: I tensorflow/core/common_runtime/gpu/gpu_device.cc:940] Found device 0 with properties: 
+name: Tesla K40m
+major: 3 minor: 5 memoryClockRate (GHz) 0.8755
+pciBusID 0000:04:00.0
+Total memory: 11.92GiB
+Free memory: 11.84GiB
+2018-09-25 15:14:45.495534: I tensorflow/core/common_runtime/gpu/gpu_device.cc:961] DMA: 0 
+2018-09-25 15:14:45.495548: I tensorflow/core/common_runtime/gpu/gpu_device.cc:971] 0:   Y 
+2018-09-25 15:14:45.495576: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1030] Creating TensorFlow device (/gpu:0) -> (device: 0, name: Tesla K40m, pci bus id: 0000:04:00.0)
+2018-09-25 15:14:48.226224: I tensorflow/core/common_runtime/gpu/gpu_device.cc:1030] Creating TensorFlow device (/gpu:0) -> (device: 0, name: Tesla K40m, pci bus id: 0000:04:00.0)
+/data1/home/ziyu.guo/lstm_binary_plain/my_structures/model_lstm.py:18: UserWarning: Update your `LSTM` call to the Keras 2 API: `LSTM(50, dropout=0.2, recurrent_dropout=0.2)`
+  x = LSTM(50, dropout_U=0.2, dropout_W=0.2)(inputs)
+/data1/home/ziyu.guo/lstm_binary_plain/my_structures/model_lstm.py:21: UserWarning: Update your `Model` call to the Keras 2 API: `Model(outputs=Tensor("de..., inputs=Tensor("in...)`
+  model = Model(input=inputs, output=predictions)
+2018-09-25 15:15:37.799717: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 2224 get requests, put_count=2134 evicted_count=1000 eviction_rate=0.468604 and unsatisfied allocation rate=0.535072
+2018-09-25 15:15:37.799772: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 100 to 110
+2018-09-25 15:15:38.663088: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:247] PoolAllocator: After 3303 get requests, put_count=3160 evicted_count=1000 eviction_rate=0.316456 and unsatisfied allocation rate=0.353012
+2018-09-25 15:15:38.663144: I tensorflow/core/common_runtime/gpu/pool_allocator.cc:259] Raising pool_size_limit_ from 256 to 281

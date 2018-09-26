@@ -1,0 +1,33 @@
+from keras.utils import np_utils
+from keras.utils.np_utils import to_categorical
+from keras.models import Sequential, Model
+from sklearn.ensemble import BaggingClassifier
+from keras.wrappers.scikit_learn import KerasClassifier
+# Create first network with Keras
+from keras.layers import Dense, Reshape, Activation, Dropout, LSTM, Input
+
+from keras.optimizers import RMSprop, Adamax, Adagrad, SGD
+
+from sklearn.metrics import roc_auc_score, roc_curve
+
+
+############################################
+################ Deine model ###############
+def m_model(n_comb, n_feature):
+    inputs = Input(shape=(12, 32))
+    x = LSTM(50, dropout_U=0.2, dropout_W=0.2)(inputs)
+    x = Dense(30, activation="relu")(x)
+    x = Dropout(.3)(x)
+    x = Dense(30, activation="relu")(x)
+    x = Dropout(.3)(x)
+    x = Dense(10, activation="relu")(x)
+    predictions = Dense(4, activation='softmax')(x)
+
+    model = Model(input=inputs, output=predictions)
+    
+    print(model.summary())
+    #plot(model, to_file='model_rnn1_plot.png', show_shapes=True, show_layer_names=True)
+    
+    #model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+    #model.load_weights('weights-Fold-1-improvement-00-0.156.hdf')
+    return model
